@@ -1,6 +1,7 @@
 import { GetServerSideProps } from 'next'
 import styles from '@/pages/dashboard/styles.module.css'
 import Head from 'next/head'
+import Link from 'next/link'
 
 import { getSession } from 'next-auth/react'
 import { Textarea } from '@/components/textarea'
@@ -8,7 +9,11 @@ import { FiShare2 } from 'react-icons/fi'
 import { FaTrash } from 'react-icons/fa'
 import { ChangeEvent, FormEvent, useState, useEffect } from 'react'
 import { db } from '@/services/firebaseConnections'
-import { addDoc, collection, query, where, orderBy, onSnapshot, DocumentSnapshot } from 'firebase/firestore'
+import {
+    addDoc, collection, query, where, orderBy,
+    onSnapshot,
+    DocumentSnapshot, doc, deleteDoc
+} from 'firebase/firestore'
 
 interface HomeProps {
     user: {
@@ -82,6 +87,18 @@ export default function Dashboard({ user }: HomeProps) {
 
     }
 
+    async function handleShare(id: string) {
+        await navigator.clipboard.writeText(
+            `${process.env.NEXT_PUBLIC_URL}/task/${id}`
+        )
+        alert('URL copiada com sucesso.')
+    }
+
+    async function handleDeleteTask(id: string) {
+        const docRef = doc(db, 'tarefas', id)
+        await deleteDoc(docRef)
+    }
+
     return (
         <div className={styles.container}>
             <Head>
@@ -119,7 +136,7 @@ export default function Dashboard({ user }: HomeProps) {
                             {item.public && (
                                 <div className={styles.tagContainer}>
                                     <label className={styles.tag}>PUBLICO</label>
-                                    <button className={styles.shareButton}>
+                                    <button className={styles.shareButton} onClick={() => handleShare(item.id)}>
                                         <FiShare2
                                             size={22}
                                             color='#3183ff'
@@ -129,8 +146,15 @@ export default function Dashboard({ user }: HomeProps) {
                             )}
 
                             <div className={styles.taskContent}>
-                                <p>{item.tarefa}</p>
-                                <button className={styles.trashButton}>
+                                {item.public ? (
+                                    <Link href={`/task/${item.id}`}>
+                                        <p>{item.tarefa}</p>
+                                    </Link>
+                                ) : (
+                                    <p>{item.tarefa}</p>
+                                )
+                                }
+                                <button className={styles.trashButton} onClick={() => handleDeleteTask(item.id)}>
                                     <FaTrash
                                         size={24}
                                         color='#ea3140'
